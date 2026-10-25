@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MBBS AI Study Hub: generate MCQs, flashcards, revision notes, mnemonics and viva questions with AI.">
+<title>MBBS AI Study Hub</title>
+<style>
+  :root { --bg:#0a0c17; --bg2:#0f1226; --card:#151930; --line:#262c52; --accent:#7c8cff; --accent2:#4ade80; --text:#e8eaf8; --muted:#98a0c4; --ok:#4ade80; --err:#f87171; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+  a { color: var(--accent); text-decoration: none; }
+  section { scroll-margin-top: 70px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+  h2.title { font-size: 1.7rem; text-align: center; margin-bottom: 0.4rem; }
+  p.sub { text-align: center; color: var(--muted); margin-bottom: 2rem; }
+  .block { padding: 3.5rem 0; }
+  .alt { background: var(--bg2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+  /* header */
+  header { position: sticky; top: 0; z-index: 50; background: rgba(15,18,38,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .bar { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .logo { font-weight: 700; font-size: 1.15rem; color: var(--text); }
+  .logo b { color: var(--accent); }
+  nav { display: flex; gap: 1.4rem; }
+  nav a { color: var(--muted); font-size: 0.92rem; }
+  nav a:hover { color: var(--text); }
+  #menuBtn { display: none; background: none; border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 0.35rem 0.7rem; font-size: 1.1rem; cursor: pointer; }
+  @media (max-width: 760px) {
+    #menuBtn { display: block; }
+    nav { display: none; position: absolute; top: 60px; left: 0; right: 0; flex-direction: column; gap: 0; background: var(--bg2); border-bottom: 1px solid var(--line); }
+    nav.open { display: flex; }
+    nav a { padding: 0.9rem 1.2rem; border-top: 1px solid var(--line); }
+  }
+
+  /* hero */
+  .hero { position: relative; overflow: hidden; min-height: 560px; display: flex; align-items: center; text-align: center; background: radial-gradient(ellipse at 50% 40%, #1a2050 0%, var(--bg) 70%); }
+  #heroCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .heroText { position: relative; z-index: 2; max-width: 680px; margin: 0 auto; padding: 3rem 1rem; }
+  .badge { display: inline-block; font-size: 0.8rem; color: var(--accent2); border: 1px solid #1f5a3a; background: #0f2a1d; border-radius: 999px; padding: 0.2rem 0.8rem; margin-bottom: 1rem; }
+  .heroText h1 { font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.15; margin-bottom: 1rem; }
+  .heroText h1 span { color: var(--accent); }
+  .heroText p { color: var(--muted); font-size: 1.05rem; margin-bottom: 1.6rem; }
+  .btn { display: inline-block; background: var(--accent); color: #0a0c17; border: 0; border-radius: 10px; padding: 0.7rem 1.3rem; font: inherit; font-weight: 600; cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .btn.small { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .heroBtns { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; }
+  #heroState { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 0.85rem; color: var(--muted); z-index: 2; }
+
+  /* features */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+  .feat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.3rem; transition: transform 0.2s, border-color 0.2s; }
+  .feat:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .feat h3 { font-size: 1.05rem; margin-bottom: 0.3rem; color: var(--accent); }
+  .feat p { color: var(--muted); font-size: 0.93rem; }
+
+  /* studio */
+  .studio { display: grid; grid-template-columns: 340px 1fr; gap: 1rem; align-items: start; }
+  @media (max-width: 880px) { .studio { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem; margin-bottom: 1rem; }
+  .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+  label { display: block; font-size: 0.82rem; color: var(--muted); margin-top: 0.8rem; }
+  input[type=text], input[type=number], select, textarea { width: 100%; background: #0d1022; color: var(--text); border: 1px solid #2d3563; border-radius: 8px; padding: 0.6rem; font: inherit; margin-top: 0.3rem; }
+  textarea { min-height: 70px; resize: vertical; }
+  .modes { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .mode { background: #0d1022; color: var(--muted); border: 1px solid #2d3563; padding: 0.38rem 0.75rem; border-radius: 999px; font: inherit; font-size: 0.84rem; cursor: pointer; }
+  .mode.on { background: var(--accent); color: #0a0c17; border-color: var(--accent); font-weight: 600; }
+  .row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; margin-top: 0.9rem; }
+  .small { font-size: 0.82rem; color: var(--muted); margin-top: 0.5rem; }
+  .ok { color: var(--ok); } .err { color: var(--err); }
+  details summary { cursor: pointer; color: var(--accent); font-size: 0.9rem; }
+  #outHead { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+  #outTitle { font-weight: 600; }
+  .empty { color: var(--muted); text-align: center; padding: 2.5rem 1rem; }
+  .bubble { padding: 0.75rem 0.95rem; border-radius: 12px; margin-bottom: 0.6rem; background: #0d1022; border: 1px solid #232a52; }
+  .bubble.me { background: #1b2150; margin-left: 2rem; }
+  .q { background: #0d1022; border: 1px solid #232a52; border-radius: 12px; padding: 0.9rem; margin-bottom: 0.8rem; }
+  .q h4 { font-weight: 600; margin-bottom: 0.5rem; }
+  .opt { display: block; width: 100%; text-align: left; background: #151a3a; color: var(--text); border: 1px solid #2d3563; border-radius: 8px; padding: 0.55rem 0.8rem; margin-top: 0.4rem; font: inherit; cursor: pointer; }
+  .opt.right { border-color: var(--ok); background: #123222; }
+  .opt.wrong { border-color: var(--err); background: #3a1818; }
+  .exp { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); }
+  #score { font-weight: 600; color: var(--accent); margin-bottom: 0.7rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.8rem; }
+  .fc { perspective: 800px; height: 170px; cursor: pointer; }
+  .fc .inner { position: relative; width: 100%; height: 100%; transition: transform 0.5s; transform-style: preserve-3d; }
+  .fc.flip .inner { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 0.9rem; text-align: center; border-radius: 12px; border: 1px solid #2d3563; overflow: auto; font-size: 0.94rem; }
+  .front { background: #151a3a; }
+  .back { background: #1d2a52; transform: rotateY(180deg); }
+  .hist { list-style: none; max-height: 240px; overflow: auto; }
+  .hist li { padding: 0.45rem 0.6rem; border: 1px solid #232a52; border-radius: 8px; margin-top: 0.4rem; font-size: 0.85rem; cursor: pointer; background: #0d1022; }
+  .hist li:hover { border-color: var(--accent); }
+  .hist li small { color: var(--muted); display: block; }
+
+  /* how + faq + about */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; counter-reset: s; }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.3rem; position: relative; }
+  .step::before { counter-increment: s; content: counter(s); position: absolute; top: -14px; left: 16px; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #0a0c17; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .step h3 { margin: 0.3rem 0; font-size: 1rem; }
+  .step p { color: var(--muted); font-size: 0.92rem; }
+  .faq { max-width: 760px; margin: 0 auto; }
+  .faq details { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0.9rem 1.1rem; margin-bottom: 0.7rem; }
+  .faq summary { font-weight: 600; cursor: pointer; color: var(--text); }
+  .faq p { color: var(--muted); margin-top: 0.6rem; font-size: 0.95rem; }
+  .about { max-width: 720px; margin: 0 auto; text-align: center; color: var(--muted); }
+
+  /* footer */
+  footer { background: #080a14; border-top: 1px solid var(--line); padding: 2.5rem 0 1.5rem; }
+  .fgrid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 700px) { .fgrid { grid-template-columns: 1fr; } }
+  footer h4 { margin-bottom: 0.6rem; font-size: 0.95rem; }
+  footer p, footer li { color: var(--muted); font-size: 0.88rem; }
+  footer ul { list-style: none; }
+  footer li { margin-bottom: 0.3rem; }
+  .copy { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 1.8rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <a href="#home" class="logo">MBBS <b>AI</b> Study Hub</a>
+    <button id="menuBtn" aria-label="Menu">&#9776;</button>
+    <nav id="nav">
+      <a href="#home">Home</a>
+      <a href="#features">Features</a>
+      <a href="#studio">Study tools</a>
+      <a href="#how">How it works</a>
+      <a href="#faq">FAQ</a>
+      <a href="#about">About</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" id="home">
+  <canvas id="heroCanvas"></canvas>
+  <div class="heroText">
+    <span class="badge">AI for medical students</span>
+    <h1>Study smarter with your own <span>AI study partner</span></h1>
+    <p>Type any topic and get MCQs, flashcards, revision notes, mnemonics, viva questions and clinical cases in seconds.</p>
+    <div class="heroBtns">
+      <a class="btn" href="#studio">Start studying</a>
+      <a class="btn ghost" href="#how">How it works</a>
+    </div>
+  </div>
+  <div id="heroState">Ready</div>
+</section>
+
+<section class="block" id="features">
+  <div class="wrap">
+    <h2 class="title">Everything you need to revise</h2>
+    <p class="sub">Nine study tools in one place, built for MBBS exams.</p>
+    <div class="grid">
+      <div class="feat"><h3>Interactive MCQs</h3><p>Pick an answer, see right or wrong instantly, read the explanation, and track your score.</p></div>
+      <div class="feat"><h3>Flip flashcards</h3><p>Tap to flip between question and answer. Perfect for quick revision on your phone.</p></div>
+      <div class="feat"><h3>Revision notes</h3><p>Short, high-yield notes with headings and common exam traps for any topic.</p></div>
+      <div class="feat"><h3>Mnemonics</h3><p>Memory tricks for lists, drugs, nerves and pathways, with each letter explained.</p></div>
+      <div class="feat"><h3>Viva practice</h3><p>Viva-style questions with short model answers so you can practise speaking.</p></div>
+      <div class="feat"><h3>Clinical cases</h3><p>Short patient scenarios with questions and answers to practise clinical thinking.</p></div>
+      <div class="feat"><h3>Compare topics</h3><p>Enter "A vs B" to get a clear list of differences, like two diseases or two drugs.</p></div>
+      <div class="feat"><h3>AI chat</h3><p>Ask follow-up questions and get simple explanations like a friendly senior.</p></div>
+      <div class="feat"><h3>Saved history</h3><p>Your last 15 sets are saved on this device. Reopen them any time and download as text.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block alt" id="studio">
+  <div class="wrap">
+    <h2 class="title">Study studio</h2>
+    <p class="sub">Choose a tool, type a topic, and press Generate.</p>
+    <div class="studio">
+      <div>
+        <div class="card">
+          <h3>1. Choose a tool</h3>
+          <div class="modes" id="modes"></div>
+          <label for="topic" id="topicLabel">2. Topic</label>
+          <input type="text" id="topic" placeholder="e.g. Brachial plexus" autocomplete="off">
+          <label for="level">Level</label>
+          <select id="level">
+            <option value="a first-year MBBS student">First-year MBBS</option>
+            <option value="a standard MBBS university exam" selected>MBBS university exam</option>
+            <option value="NEET-PG level, hard and clinical">NEET-PG level (hard)</option>
+          </select>
+          <div id="countRow">
+            <label for="count">How many</label>
+            <input type="number" id="count" value="10" min="1" max="30">
+          </div>
+          <div class="row">
+            <button class="btn" id="go">Generate</button>
+          </div>
+          <p class="small" id="status"></p>
+        </div>
+        <div class="card">
+          <h3>History</h3>
+          <ul class="hist" id="hist"></ul>
+          <div class="row"><button class="btn ghost small" id="clearHist">Clear history</button></div>
+        </div>
+        <div class="card">
+          <details>
+            <summary>Advanced settings</summary>
+            <label for="model">Model</label>
+            <input type="text" id="model" list="models" value="llama-3.3-70b-versatile">
+            <datalist id="models"></datalist>
+            <label for="extraKeys">Extra Groq keys (optional, one per line)</label>
+            <textarea id="extraKeys" spellcheck="false" autocomplete="off" placeholder="gsk_..."></textarea>
+            <div class="row">
+              <button class="btn small" id="saveSet">Save</button>
+              <button class="btn ghost small" id="loadModels">Load models</button>
+            </div>
+            <p class="small" id="setMsg"></p>
+          </details>
+        </div>
+      </div>
+
+      <div class="card" style="min-height:420px">
+        <div id="outHead" hidden>
+          <span id="outTitle"></span>
+          <span class="row" style="margin:0">
+            <button class="btn ghost small" id="copyBtn">Copy</button>
+            <button class="btn ghost small" id="dlBtn">Download .txt</button>
+          </span>
+        </div>
+        <div id="out"><div class="empty">Your results will appear here.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="how">
+  <div class="wrap">
+    <h2 class="title">How it works</h2>
+    <p class="sub">Four simple steps from topic to revision.</p>
+    <div class="steps">
+      <div class="step"><h3>Pick a tool</h3><p>Choose MCQs, flashcards, notes, mnemonics, viva, case, compare or chat.</p></div>
+      <div class="step"><h3>Type a topic</h3><p>Be specific. "Nerve supply of the diaphragm" works better than "anatomy".</p></div>
+      <div class="step"><h3>Set the level</h3><p>Choose first-year, university exam or NEET-PG difficulty and how many items.</p></div>
+      <div class="step"><h3>Generate and revise</h3><p>Practise, flip cards, copy or download. Check facts with your textbook.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block alt" id="faq">
+  <div class="wrap">
+    <h2 class="title">Frequently asked questions</h2>
+    <p class="sub">Quick answers before you start.</p>
+    <div class="faq">
+      <details><summary>Is the AI always correct?</summary><p>No. AI can write wrong answers with full confidence. Always check important facts against your textbook, notes or teacher, especially before exams.</p></details>
+      <details><summary>Can I use this for patients?</summary><p>No. This is a study tool only. It must never be used to diagnose or treat real patients.</p></details>
+      <details><summary>Why did I see a limit or error message?</summary><p>Free AI plans have daily and per-minute limits. The site tries its other keys automatically. If all hit their limit, wait a little and try again.</p></details>
+      <details><summary>Where is my history saved?</summary><p>Only in this browser on this device. If you clear browser data, the history is removed.</p></details>
+      <details><summary>Is it safe to share this page?</summary><p>The API keys are written inside this file. Anyone who gets the file can read and use them. Keep it for your own use and do not upload it to a public website.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="about">
+  <div class="wrap about">
+    <h2 class="title">About</h2>
+    <p>MBBS AI Study Hub is a personal project made by a medical student, for medical students. It uses fast open AI models through Groq to turn any topic into practice material, so you spend less time making notes and more time revising.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <h4>MBBS AI Study Hub</h4>
+        <p>AI-powered MCQs, flashcards and notes for medical students. Free to use, made for learning.</p>
+      </div>
+      <div>
+        <h4>Quick links</h4>
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#studio">Study tools</a></li>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Please note</h4>
+        <ul>
+          <li>For study only, not medical advice.</li>
+          <li>Verify facts with your textbooks.</li>
+          <li>Do not enter patient details.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="copy">&copy; <span id="yr"></span> MBBS AI Study Hub. AI can make mistakes. Powered by Groq.</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  // =====================================================================
+  // PERSONAL USE ONLY: the keys below are readable by anyone who gets this
+  // file. Do NOT upload this file to a public website or share it.
+  // =====================================================================
+  const BUILT_IN_KEYS = [
+    "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",
+    "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",
+    "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"
+  ];
+  const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+  const API = "https://api.groq.com/openai/v1";
+
+  const $ = id => document.getElementById(id);
+  let busy = false, mode = "mcq", chat = [], keyIdx = 0, useJsonMode = true;
+  let current = { title: "", text: "" }, hist = [];
+
+  const MODES = {
+    mcq:      { label: "MCQs",           ph: "e.g. Brachial plexus",                 count: true },
+    flash:    { label: "Flashcards",     ph: "e.g. Cranial nerves",                  count: true },
+    notes:    { label: "Revision notes", ph: "e.g. Shock",                           count: false },
+    mnemonic: { label: "Mnemonics",      ph: "e.g. Carpal bones",                    count: false },
+    viva:     { label: "Viva questions", ph: "e.g. Femoral triangle",                count: true },
+    case:     { label: "Clinical case",  ph: "e.g. Acute appendicitis",              count: false },
+    compare:  { label: "Compare",        ph: "e.g. Ulcerative colitis vs Crohn disease", count: false },
+    explain:  { label: "Explain simply", ph: "e.g. Counter-current mechanism",       count: false },
+    chat:     { label: "Chat",           ph: "Ask anything about your studies",      count: false }
+  };
+
+  // ---------- helpers ----------
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  function fmt(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>"); }
+  function setStatus(msg, cls) { $("status").className = "small " + (cls || ""); $("status").textContent = msg; }
+  function setBusy(b) { busy = b; $("go").disabled = b; $("heroState").textContent = b ? "Thinking..." : "Ready"; }
+  function getKeys() {
+    const extra = ($("extraKeys").value || "").split("\n").map(s => s.trim()).filter(Boolean);
+    return [...new Set([...extra, ...BUILT_IN_KEYS])].filter(Boolean);
+  }
+  $("yr").textContent = new Date().getFullYear();
+  $("menuBtn").onclick = () => $("nav").classList.toggle("open");
+  $("nav").onclick = () => $("nav").classList.remove("open");
+
+  // ---------- saved settings and history ----------
+  try {
+    $("extraKeys").value = localStorage.getItem("mbbs_extra") || "";
+    $("model").value = localStorage.getItem("mbbs_model") || DEFAULT_MODEL;
+    hist = JSON.parse(localStorage.getItem("mbbs_hist") || "[]");
+  } catch (e) { hist = []; }
+  function saveHist() { try { localStorage.setItem("mbbs_hist", JSON.stringify(hist.slice(0, 15))); } catch (e) {} }
+
+  $("saveSet").onclick = () => {
+    try {
+      localStorage.setItem("mbbs_extra", $("extraKeys").value);
+      localStorage.setItem("mbbs_model", $("model").value.trim());
+      $("setMsg").className = "small ok"; $("setMsg").textContent = "Saved on this device.";
+    } catch (e) { $("setMsg").className = "small err"; $("setMsg").textContent = "Could not save. Browser storage is blocked."; }
+  };
+  async function fetchModels(key) {
+    const r = await fetch(API + "/models", { headers: { Authorization: "Bearer " + key } });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    return d.data.map(m => m.id).filter(id => !/whisper|tts|guard|embed|prompt/i.test(id)).sort();
+  }
+  $("loadModels").onclick = async () => {
+    try {
+      const ids = await fetchModels(getKeys()[0]);
+      $("models").innerHTML = ids.map(id => `<option value="${esc(id)}">`).join("");
+      $("setMsg").className = "small ok"; $("setMsg").textContent = ids.length + " models loaded. Click the Model box to choose.";
+    } catch (e) { $("setMsg").className = "small err"; $("setMsg").textContent = "Could not load models: " + e.message; }
+  };
+  async function pickModel(key) {
+    try {
+      const ids = await fetchModels(key);
+      for (const re of [/llama-3\.3-70b/, /gpt-oss-120b/, /llama-3\.1-8b/, /llama/, /./]) {
+        const f = ids.find(id => re.test(id)); if (f) return f;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  // ---------- Groq call with key rotation ----------
+  async function callGroq(messages, wantJson) {
+    const keys = getKeys();
+    if (!keys.length) throw new Error("No API key found.");
+    let model = $("model").value.trim() || DEFAULT_MODEL, lastErr = "", picked = false;
+    for (let n = 0; n < keys.length; n++) {
+      const i = (keyIdx + n) % keys.length;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const body = { model, messages, temperature: 0.4 };
+        if (wantJson && useJsonMode) body.response_format = { type: "json_object" };
+        let r;
+        try {
+          r = await fetch(API + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + keys[i] }, body: JSON.stringify(body) });
+        } catch (e) { throw new Error("Could not reach Groq. Check your internet connection."); }
+        if (r.ok) { keyIdx = i; const d = await r.json(); return d.choices[0].message.content; }
+        let msg = ""; try { msg = (await r.json()).error.message; } catch (e) {}
+        lastErr = `HTTP ${r.status} ${msg}`;
+        const modelErr = (r.status === 400 || r.status === 404) && /decommission|does not exist|model_not_found|not found/i.test(msg);
+        if (modelErr && !picked) { picked = true; const m = await pickModel(keys[i]); if (m) { model = m; $("model").value = m; continue; } }
+        if (r.status === 400 && body.response_format && !modelErr) { useJsonMode = false; continue; }
+        break;
+      }
+      if (!/HTTP (429|401|403)/.test(lastErr)) throw new Error(lastErr);
+    }
+    throw new Error("All keys are limited or rejected right now. Last error: " + lastErr);
+  }
+  function parseJSON(t) {
+    t = t.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+    try { return JSON.parse(t); } catch (e) { const m = t.match(/\{[\s\S]*\}/); if (m) return JSON.parse(m[0]); throw e; }
+  }
+
+  // ---------- tool buttons ----------
+  Object.keys(MODES).forEach(k => {
+    const b = document.createElement("button");
+    b.className = "mode" + (k === mode ? " on" : ""); b.dataset.m = k; b.textContent = MODES[k].label;
+    $("modes").appendChild(b);
+  });
+  $("modes").onclick = e => {
+    const b = e.target.closest(".mode"); if (!b) return;
+    document.querySelectorAll(".mode").forEach(x => x.classList.remove("on"));
+    b.classList.add("on"); mode = b.dataset.m;
+    $("topic").placeholder = MODES[mode].ph;
+    $("countRow").style.display = MODES[mode].count ? "block" : "none";
+    $("topicLabel").textContent = mode === "chat" ? "2. Your message" : "2. Topic";
+    $("go").textContent = mode === "chat" ? "Send" : "Generate";
+  };
+
+  // ---------- rendering ----------
+  function head(title) { $("outHead").hidden = false; $("outTitle").textContent = title; }
+
+  function renderMCQ(list, title) {
+    head(title);
+    let score = 0, done = 0;
+    $("out").innerHTML = `<div id="score">Score: 0 / ${list.length}</div>`;
+    list.forEach((item, qi) => {
+      const box = document.createElement("div"); box.className = "q";
+      const h = document.createElement("h4"); h.textContent = `${qi + 1}. ${item.q}`; box.appendChild(h);
+      const exp = document.createElement("div"); exp.className = "exp"; exp.hidden = true;
+      const opts = [];
+      item.options.forEach((o, oi) => {
+        const b = document.createElement("button"); b.className = "opt"; b.textContent = String.fromCharCode(65 + oi) + ". " + o;
+        b.onclick = () => {
+          if (box.dataset.done) return; box.dataset.done = "1"; done++;
+          if (oi === item.answer) { b.classList.add("right"); score++; } else { b.classList.add("wrong"); opts[item.answer].classList.add("right"); }
+          exp.textContent = "Explanation: " + (item.explanation || "No explanation given."); exp.hidden = false;
+          $("score").textContent = `Score: ${score} / ${list.length}` + (done === list.length ? " (finished)" : "");
+        };
+        opts.push(b); box.appendChild(b);
+      });
+      box.appendChild(exp); $("out").appendChild(box);
+    });
+    current = { title, text: list.map((x, i) => `${i + 1}. ${x.q}\n` + x.options.map((o, j) => `   ${String.fromCharCode(65 + j)}. ${o}`).join("\n") + `\n   Answer: ${String.fromCharCode(65 + x.answer)}\n   ${x.explanation || ""}`).join("\n\n") };
+  }
+  function renderFlash(list, title) {
+    head(title);
+    $("out").innerHTML = '<p class="small" style="margin:0 0 .7rem">Tap a card to flip it.</p><div class="cards" id="cardGrid"></div>';
+    list.forEach(c => {
+      const d = document.createElement("div"); d.className = "fc";
+      d.innerHTML = '<div class="inner"><div class="face front"></div><div class="face back"></div></div>';
+      d.querySelector(".front").textContent = c.front; d.querySelector(".back").textContent = c.back;
+      d.onclick = () => d.classList.toggle("flip"); $("cardGrid").appendChild(d);
+    });
+    current = { title, text: list.map((c, i) => `${i + 1}. ${c.front}\n   ${c.back}`).join("\n\n") };
+  }
+  function renderText(t, title) { head(title); $("out").innerHTML = `<div class="bubble">${fmt(t)}</div>`; current = { title, text: t }; }
+  function renderChat() {
+    head("Chat");
+    $("out").innerHTML = chat.map(m => `<div class="bubble ${m.role === "user" ? "me" : ""}">${fmt(m.content)}</div>`).join("");
+    current = { title: "Chat", text: chat.map(m => (m.role === "user" ? "You: " : "AI: ") + m.content).join("\n\n") };
+  }
+
+  // ---------- history ----------
+  function drawHist() {
+    $("hist").innerHTML = "";
+    if (!hist.length) { const li = document.createElement("li"); li.textContent = "Nothing saved yet."; li.style.cursor = "default"; $("hist").appendChild(li); return; }
+    hist.forEach(h => {
+      const li = document.createElement("li");
+      li.textContent = h.title; const s = document.createElement("small"); s.textContent = h.when; li.appendChild(s);
+      li.onclick = () => { open(h); document.getElementById("out").scrollIntoView({ behavior: "smooth", block: "start" }); };
+      $("hist").appendChild(li);
+    });
+  }
+  function open(h) {
+    if (h.kind === "mcq") renderMCQ(h.data, h.title);
+    else if (h.kind === "flash") renderFlash(h.data, h.title);
+    else renderText(h.data, h.title);
+  }
+  function addHist(kind, title, data) {
+    hist.unshift({ kind, title, data, when: new Date().toLocaleString() });
+    hist = hist.slice(0, 15); saveHist(); drawHist();
+  }
+  $("clearHist").onclick = () => { hist = []; saveHist(); drawHist(); };
+  drawHist();
+
+  $("copyBtn").onclick = async () => { try { await navigator.clipboard.writeText(current.text); setStatus("Copied.", "ok"); } catch (e) { setStatus("Could not copy. Use Download instead.", "err"); } };
+  $("dlBtn").onclick = () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([current.title + "\n\n" + current.text], { type: "text/plain" }));
+    a.download = (current.title || "study").replace(/[^a-z0-9]+/gi, "_").slice(0, 40) + ".txt";
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+
+  // ---------- generate ----------
+  const SYS = "You are an expert medical educator helping an Indian MBBS student. Be accurate, concise and exam-focused. If you are not sure about a fact, say so instead of guessing.";
+  $("go").onclick = async () => {
+    if (busy) return;
+    const topic = $("topic").value.trim();
+    if (!topic) { setStatus("Type a topic or message first.", "err"); return; }
+    const n = Math.min(30, Math.max(1, parseInt($("count").value, 10) || 10));
+    const lvl = $("level").value, label = MODES[mode].label;
+    const title = `${label}: ${topic}`;
+    setStatus(""); setBusy(true);
+    try {
+      if (mode === "mcq") {
+        const t = await callGroq([{ role: "system", content: SYS + " Reply with JSON only." }, { role: "user", content: `Create ${n} multiple-choice questions on: ${topic}. Difficulty: ${lvl}. Each has exactly 4 options and one correct answer. Return JSON in this exact shape: {"mcqs":[{"q":"question","options":["option A","option B","option C","option D"],"answer":0,"explanation":"short reason"}]} where answer is the index (0 to 3) of the correct option.` }], true);
+        const list = (parseJSON(t).mcqs || []).filter(x => x && x.q && Array.isArray(x.options) && x.options.length >= 2 && Number.isInteger(x.answer) && x.options[x.answer] !== undefined);
+        if (!list.length) throw new Error("The AI did not return usable questions. Please try again.");
+        renderMCQ(list, title); addHist("mcq", title, list);
+      } else if (mode === "flash") {
+        const t = await callGroq([{ role: "system", content: SYS + " Reply with JSON only." }, { role: "user", content: `Create ${n} flashcards on: ${topic}. Difficulty: ${lvl}. Return JSON in this exact shape: {"cards":[{"front":"question or term","back":"short answer"}]}` }], true);
+        const list = (parseJSON(t).cards || []).filter(x => x && x.front && x.back);
+        if (!list.length) throw new Error("The AI did not return usable flashcards. Please try again.");
+        renderFlash(list, title); addHist("flash", title, list);
+      } else if (mode === "chat") {
+        chat.push({ role: "user", content: topic });
+        const t = await callGroq([{ role: "system", content: SYS }, ...chat.slice(-12)], false);
+        chat.push({ role: "assistant", content: t }); renderChat(); $("topic").value = "";
+      } else {
+        const P = {
+          notes: `Write concise exam-oriented revision notes on: ${topic}. Level: ${lvl}. Use short headings and bullet-style lines. Include high-yield points and common exam traps.`,
+          mnemonic: `Give 3 to 5 memory mnemonics for: ${topic}. For each, show the mnemonic and what each letter or word stands for.`,
+          viva: `Write ${n} viva-style questions on: ${topic}. Level: ${lvl}. Give each a short model answer.`,
+          case: `Write a short clinical case scenario on: ${topic}. Level: ${lvl}. Give history, examination and investigations, then 4 questions with answers.`,
+          compare: `Compare the following in a clear point-by-point list of key differences, exam style: ${topic}.`,
+          explain: `Explain ${topic} in very simple language for ${lvl}, with one everyday analogy and 3 key takeaways.`
+        };
+        const t = await callGroq([{ role: "system", content: SYS }, { role: "user", content: P[mode] }], false);
+        renderText(t, title); addHist("text", title, t);
+      }
+      setStatus("Done.", "ok");
+    } catch (e) { setStatus(e.message, "err"); }
+    setBusy(false);
+  };
+  $("topic").addEventListener("keydown", e => { if (e.key === "Enter") $("go").click(); });
+
+  // ---------- three.js hero ----------
+  (function () {
+    const canvas = $("heroCanvas");
+    if (!window.THREE) { canvas.style.display = "none"; return; }
+    const hero = $("home");
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+    camera.position.z = 7;
+    const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(2, 2), new THREE.MeshBasicMaterial({ color: 0x7c8cff, wireframe: true, transparent: true, opacity: 0.35 }));
+    const core = new THREE.Mesh(new THREE.SphereGeometry(0.8, 24, 24), new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.35 }));
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(3.2, 0.015, 8, 120), new THREE.MeshBasicMaterial({ color: 0x98a0c4, transparent: true, opacity: 0.5 }));
+    ring.rotation.x = 1.2;
+    scene.add(orb, core, ring);
+    const N = 500, pos = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) {
+      const r = 3.5 + Math.random() * 4, a = Math.random() * 6.283, b = Math.acos(2 * Math.random() - 1);
+      pos[i * 3] = r * Math.sin(b) * Math.cos(a); pos[i * 3 + 1] = r * Math.sin(b) * Math.sin(a); pos[i * 3 + 2] = r * Math.cos(b);
+    }
+    const pg = new THREE.BufferGeometry(); pg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const pts = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0x98a0c4, size: 0.05 }));
+    scene.add(pts);
+    function resize() {
+      const w = hero.clientWidth, h = hero.clientHeight;
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+    window.addEventListener("resize", resize); resize();
+    let mx = 0, my = 0;
+    hero.addEventListener("pointermove", e => { const r = hero.getBoundingClientRect(); mx = ((e.clientX - r.left) / r.width - 0.5); my = ((e.clientY - r.top) / r.height - 0.5); });
+    let t = 0, speed = 0.004;
+    (function loop() {
+      t += 0.03; speed += ((busy ? 0.03 : 0.004) - speed) * 0.05;
+      orb.rotation.y += speed; orb.rotation.x += speed * 0.6;
+      ring.rotation.z += speed * 0.8; pts.rotation.y -= speed * 0.3;
+      const s = 1 + Math.sin(t * (busy ? 3 : 1)) * (busy ? 0.15 : 0.05);
+      core.scale.set(s, s, s);
+      core.material.color.setHex(busy ? 0xfacc15 : 0x4ade80);
+      camera.position.x += (mx * 1.5 - camera.position.x) * 0.05;
+      camera.position.y += (-my * 1.2 - camera.position.y) * 0.05;
+      camera.lookAt(0, 0, 0);
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    })();
+  })();
+</script>
+</body>
+</html>
